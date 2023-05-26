@@ -11,7 +11,9 @@ use App\Models\Currency;
 use App\Models\DMReview;
 use Illuminate\Support\Carbon;
 use App\Models\BusinessSetting;
+
 use App\CentralLogics\StoreLogic;
+use App\Models\DeliveryMan;
 use App\Models\Expense;
 use App\Models\NotificationMessage;
 use App\Models\User;
@@ -23,6 +25,7 @@ use Laravelpkg\Laravelchk\Http\Controllers\LaravelchkController;
 use Grimzy\LaravelMysqlSpatial\Types\Point;
 use Illuminate\Support\Str;
 use PayPal\Api\Transaction;
+use Illuminate\Support\Facades\Log;
 
 class Helpers
 {
@@ -70,7 +73,7 @@ class Helpers
 
     public static function address_data_formatting($data)
     {
-        foreach ($data as $key=>$item) {
+        foreach ($data as $key => $item) {
             $point = new Point($item->latitude, $item->longitude);
             $data[$key]['zone_ids'] = array_column(Zone::contains('coordinates', $point)->latest()->get(['id'])->toArray(), 'id');;
         }
@@ -104,7 +107,7 @@ class Helpers
                     $item['available_date_ends'] = $item->end_date->format('Y-m-d');
                     unset($item['end_date']);
                 }
-                $item['recommended'] =(int) $item->recommended;
+                $item['recommended'] = (int) $item->recommended;
                 $categories = [];
                 foreach (json_decode($item['category_ids']) as $value) {
                     $categories[] = ['id' => (string)$value->id, 'position' => $value->position];
@@ -121,7 +124,7 @@ class Helpers
                     ]);
                 }
                 $item['variations'] = $variations;
-                $item['food_variations'] = $item['food_variations']?json_decode($item['food_variations'], true):'';
+                $item['food_variations'] = $item['food_variations'] ? json_decode($item['food_variations'], true) : '';
                 $item['module_type'] = $item->module->module_type;
                 $item['store_name'] = $item->store->name;
                 $item['zone_id'] = $item->store->zone_id;
@@ -130,7 +133,7 @@ class Helpers
                 $item['tax'] = $item->store->tax;
                 $item['rating_count'] = (int)($item->rating ? array_sum(json_decode($item->rating, true)) : 0);
                 $item['avg_rating'] = (float)($item->avg_rating ? $item->avg_rating : 0);
-                $item['recommended'] =(int) $item->recommended;
+                $item['recommended'] = (int) $item->recommended;
 
                 if ($trans) {
                     $item['translations'][] = [
@@ -215,7 +218,7 @@ class Helpers
                 unset($data['end_date']);
             }
             $data['variations'] = $variations;
-            $data['food_variations'] = $data['food_variations']?json_decode($data['food_variations'], true):'';
+            $data['food_variations'] = $data['food_variations'] ? json_decode($data['food_variations'], true) : '';
             $data['store_name'] = $data->store->name;
             $data['module_type'] = $data->module->module_type;
             $data['zone_id'] = $data->store->zone_id;
@@ -615,17 +618,17 @@ class Helpers
 
     public static function currency_code()
     {
-        if(!request()->is('/api*') && !session()->has('currency_code')){
+        if (!request()->is('/api*') && !session()->has('currency_code')) {
             $currency = BusinessSetting::where(['key' => 'currency'])->first()->value;
-            session()->put('currency_code',$currency);
-        }else{
+            session()->put('currency_code', $currency);
+        } else {
             $currency = BusinessSetting::where(['key' => 'currency'])->first()->value;
         }
 
-        if(!request()->is('/api*')){
+        if (!request()->is('/api*')) {
             $currency = session()->get('currency_code');
         }
-       
+
         return $currency;
     }
 
@@ -637,9 +640,9 @@ class Helpers
 
     public static function currency_symbol()
     {
-        if(!session()->has('currency_symbol')){
+        if (!session()->has('currency_symbol')) {
             $currency_symbol = Currency::where(['currency_code' => Helpers::currency_code()])->first()->currency_symbol;
-            session()->put('currency_symbol',$currency_symbol);
+            session()->put('currency_symbol', $currency_symbol);
         }
         $currency_symbol = session()->get('currency_symbol');
         return $currency_symbol;
@@ -654,9 +657,9 @@ class Helpers
 
     public static function format_currency($value)
     {
-        if(!session()->has('currency_symbol_position')){
+        if (!session()->has('currency_symbol_position')) {
             $currency_symbol_position = BusinessSetting::where(['key' => 'currency_symbol_position'])->first()->value;
-            session()->put('currency_symbol_position',$currency_symbol_position);
+            session()->put('currency_symbol_position', $currency_symbol_position);
         }
         $currency_symbol_position = session()->get('currency_symbol_position');
         return $currency_symbol_position == 'right' ? number_format($value, config('round_up_to_digit')) . ' ' . self::currency_symbol() : self::currency_symbol() . ' ' . number_format($value, config('round_up_to_digit'));
@@ -671,36 +674,36 @@ class Helpers
             "content-type: application/json"
         );
 
-        if(isset($data['message'])){
+        if (isset($data['message'])) {
             $message = $data['message'];
-        }else{
+        } else {
             $message = '';
         }
-        if(isset($data['conversation_id'])){
+        if (isset($data['conversation_id'])) {
             $conversation_id = $data['conversation_id'];
-        }else{
+        } else {
             $conversation_id = '';
         }
-        if(isset($data['sender_type'])){
+        if (isset($data['sender_type'])) {
             $sender_type = $data['sender_type'];
-        }else{
+        } else {
             $sender_type = '';
         }
-        if(isset($data['module_id'])){
+        if (isset($data['module_id'])) {
             $module_id = $data['module_id'];
-        }else{
+        } else {
             $module_id = '';
         }
-        if(isset($data['order_type'])){
+        if (isset($data['order_type'])) {
             $order_type = $data['order_type'];
-        }else{
+        } else {
             $order_type = '';
         }
 
         $click_action = "";
-        if($web_push_link){
+        if ($web_push_link) {
             $click_action = ',
-            "click_action": "'.$web_push_link.'"';
+            "click_action": "' . $web_push_link . '"';
         }
 
         $postdata = '{
@@ -730,7 +733,7 @@ class Helpers
                 "icon" : "new",
                 "sound": "notification.wav",
                 "android_channel_id": "6ammart"
-                '.$click_action.'
+                ' . $click_action . '
             }
         }';
         $ch = curl_init();
@@ -750,7 +753,7 @@ class Helpers
         return $result;
     }
 
-    public static function send_push_notif_to_topic($data, $topic, $type,$web_push_link = null)
+    public static function send_push_notif_to_topic($data, $topic, $type, $web_push_link = null)
     {
         info([$data, $topic, $type, $web_push_link]);
         $key = BusinessSetting::where(['key' => 'push_notification_key'])->first()->value;
@@ -760,21 +763,21 @@ class Helpers
             "authorization: key=" . $key . "",
             "content-type: application/json"
         );
-        if(isset($data['module_id'])){
+        if (isset($data['module_id'])) {
             $module_id = $data['module_id'];
-        }else{
+        } else {
             $module_id = '';
         }
-        if(isset($data['order_type'])){
+        if (isset($data['order_type'])) {
             $order_type = $data['order_type'];
-        }else{
+        } else {
             $order_type = '';
         }
 
         $click_action = "";
-        if($web_push_link){
+        if ($web_push_link) {
             $click_action = ',
-            "click_action": "'.$web_push_link.'"';
+            "click_action": "' . $web_push_link . '"';
         }
 
         if (isset($data['order_id'])) {
@@ -803,7 +806,7 @@ class Helpers
                     "icon" : "new",
                     "sound": "notification.wav",
                     "android_channel_id": "6ammart"
-                    '.$click_action.'
+                    ' . $click_action . '
                   }
             }';
         } else {
@@ -827,7 +830,7 @@ class Helpers
                     "icon" : "new",
                     "sound": "notification.wav",
                     "android_channel_id": "6ammart"
-                    '.$click_action.'
+                    ' . $click_action . '
                   }
             }';
         }
@@ -1096,72 +1099,73 @@ class Helpers
 
     // }
 
-    public static function order_status_update_message($status,$module_type, $lang='en')
+    public static function order_status_update_message($status, $module_type, $lang = 'en')
     {
         if ($status == 'pending') {
-            $data = NotificationMessage::with(['translations'=>function($query)use($lang){
+            $data = NotificationMessage::with(['translations' => function ($query) use ($lang) {
                 $query->where('locale', $lang);
-            }])->where('module_type',$module_type)->where('key', 'order_pending_message')->first();
+            }])->where('module_type', $module_type)->where('key', 'order_pending_message')->first();
         } elseif ($status == 'confirmed') {
-            $data =  NotificationMessage::with(['translations'=>function($query)use($lang){
+            $data =  NotificationMessage::with(['translations' => function ($query) use ($lang) {
                 $query->where('locale', $lang);
-            }])->where('module_type',$module_type)->where('key', 'order_confirmation_msg')->first();
+            }])->where('module_type', $module_type)->where('key', 'order_confirmation_msg')->first();
         } elseif ($status == 'processing') {
-            $data = NotificationMessage::with(['translations'=>function($query)use($lang){
+            $data = NotificationMessage::with(['translations' => function ($query) use ($lang) {
                 $query->where('locale', $lang);
-            }])->where('module_type',$module_type)->where('key', 'order_processing_message')->first();
+            }])->where('module_type', $module_type)->where('key', 'order_processing_message')->first();
         } elseif ($status == 'picked_up') {
-            $data = NotificationMessage::with(['translations'=>function($query)use($lang){
+            $data = NotificationMessage::with(['translations' => function ($query) use ($lang) {
                 $query->where('locale', $lang);
-            }])->where('module_type',$module_type)->where('key', 'out_for_delivery_message')->first();
+            }])->where('module_type', $module_type)->where('key', 'out_for_delivery_message')->first();
         } elseif ($status == 'handover') {
-            $data = NotificationMessage::with(['translations'=>function($query)use($lang){
+            $data = NotificationMessage::with(['translations' => function ($query) use ($lang) {
                 $query->where('locale', $lang);
-            }])->where('module_type',$module_type)->where('key', 'order_handover_message')->first();
+            }])->where('module_type', $module_type)->where('key', 'order_handover_message')->first();
         } elseif ($status == 'delivered') {
-            $data = NotificationMessage::with(['translations'=>function($query)use($lang){
+            $data = NotificationMessage::with(['translations' => function ($query) use ($lang) {
                 $query->where('locale', $lang);
-            }])->where('module_type',$module_type)->where('key', 'order_delivered_message')->first();
+            }])->where('module_type', $module_type)->where('key', 'order_delivered_message')->first();
         } elseif ($status == 'delivery_boy_delivered') {
-            $data = NotificationMessage::with(['translations'=>function($query)use($lang){
+            $data = NotificationMessage::with(['translations' => function ($query) use ($lang) {
                 $query->where('locale', $lang);
-            }])->where('module_type',$module_type)->where('key', 'delivery_boy_delivered_message')->first();
+            }])->where('module_type', $module_type)->where('key', 'delivery_boy_delivered_message')->first();
         } elseif ($status == 'accepted') {
-            $data = NotificationMessage::with(['translations'=>function($query)use($lang){
+            $data = NotificationMessage::with(['translations' => function ($query) use ($lang) {
                 $query->where('locale', $lang);
-            }])->where('module_type',$module_type)->where('key', 'delivery_boy_assign_message')->first();
+            }])->where('module_type', $module_type)->where('key', 'delivery_boy_assign_message')->first();
         } elseif ($status == 'canceled') {
-            $data = NotificationMessage::with(['translations'=>function($query)use($lang){
+            $data = NotificationMessage::with(['translations' => function ($query) use ($lang) {
                 $query->where('locale', $lang);
-            }])->where('module_type',$module_type)->where('key', 'order_cancled_message')->first();
+            }])->where('module_type', $module_type)->where('key', 'order_cancled_message')->first();
         } elseif ($status == 'refunded') {
-            $data = NotificationMessage::with(['translations'=>function($query)use($lang){
+            $data = NotificationMessage::with(['translations' => function ($query) use ($lang) {
                 $query->where('locale', $lang);
-            }])->where('module_type',$module_type)->where('key', 'order_refunded_message')->first();
+            }])->where('module_type', $module_type)->where('key', 'order_refunded_message')->first();
         } elseif ($status == 'refund_request_canceled') {
-            $data = NotificationMessage::with(['translations'=>function($query)use($lang){
+            $data = NotificationMessage::with(['translations' => function ($query) use ($lang) {
                 $query->where('locale', $lang);
-            }])->where('module_type',$module_type)->where('key', 'refund_request_canceled')->first();
+            }])->where('module_type', $module_type)->where('key', 'refund_request_canceled')->first();
         } else {
-            $data = ["status"=>"0","message"=>"",'translations'=>[]];
+            $data = ["status" => "0", "message" => "", 'translations' => []];
         }
 
-        if($data){
+        if ($data) {
             if ($data['status'] == 0) {
                 return 0;
             }
             return count($data->translations) > 0 ? $data->translations[0]->value : $data['message'];
-        }else{
+        } else {
             return false;
         }
     }
 
     public static function send_order_notification($order)
     {
+        Log::debug($order);
 
         try {
 
-            if(($order->payment_method == 'cash_on_delivery' && $order->order_status == 'pending' )||($order->payment_method != 'cash_on_delivery' && $order->order_status == 'confirmed' )){
+            if (($order->payment_method == 'cash_on_delivery' && $order->order_status == 'pending') || ($order->payment_method != 'cash_on_delivery' && $order->order_status == 'confirmed')) {
                 $data = [
                     'title' => translate('messages.order_push_title'),
                     'description' => translate('messages.new_order_push_description'),
@@ -1171,12 +1175,12 @@ class Helpers
                     'order_type' => $order->order_type,
                     'type' => 'new_order',
                 ];
-                self::send_push_notif_to_topic($data, 'admin_message', 'order_request', url('/').'/admin/order/list/all');
+                self::send_push_notif_to_topic($data, 'admin_message', 'order_request', url('/') . '/admin/order/list/all');
             }
 
             $status = ($order->order_status == 'delivered' && $order->delivery_man) ? 'delivery_boy_delivered' : $order->order_status;
-            $value = self::order_status_update_message($status,$order->module->module_type,$order->customer?
-            $order->customer->current_language_key:'en');
+            $value = self::order_status_update_message($status, $order->module->module_type, $order->customer ?
+                $order->customer->current_language_key : 'en');
             if ($value) {
                 $data = [
                     'title' => translate('messages.order_push_title'),
@@ -1202,7 +1206,7 @@ class Helpers
                     'image' => '',
                     'type' => 'order_status',
                 ];
-                if($order->store && $order->store->vendor){
+                if ($order->store && $order->store->vendor) {
                     self::send_push_notif_to_device($order->store->vendor->firebase_token, $data);
                     DB::table('user_notifications')->insert([
                         'data' => json_encode($data),
@@ -1224,9 +1228,9 @@ class Helpers
                         'image' => '',
                         'type' => 'new_order',
                     ];
-                    if($order->store && $order->store->vendor){
+                    if ($order->store && $order->store->vendor) {
                         self::send_push_notif_to_device($order->store->vendor->firebase_token, $data);
-                        $web_push_link = url('/').'/store-panel/order/list/all';
+                        $web_push_link = url('/') . '/store-panel/order/list/all';
                         self::send_push_notif_to_topic($data, "store_panel_{$order->store_id}_message", 'new_order', $web_push_link);
                         DB::table('user_notifications')->insert([
                             'data' => json_encode($data),
@@ -1246,16 +1250,15 @@ class Helpers
                         'order_type' => $order->order_type,
                         'image' => '',
                     ];
-                    if($order->zone){
-                        if($order->dm_vehicle_id){
-                            
-                            $topic = 'delivery_man_'.$order->zone_id.'_'.$order->dm_vehicle_id;
+                    if ($order->zone) {
+                        if ($order->dm_vehicle_id) {
+
+                            $topic = 'delivery_man_' . $order->zone_id . '_' . $order->dm_vehicle_id;
                             self::send_push_notif_to_topic($data, $topic, 'order_request');
                             self::send_push_notif_to_topic($data, $order->zone->deliveryman_wise_topic, 'order_request');
-                        }else{
+                        } else {
                             self::send_push_notif_to_topic($data, $order->zone->deliveryman_wise_topic, 'order_request');
                         }
-                        
                     }
                 }
                 // self::send_push_notif_to_topic($data, 'admin_message', 'order_request', url('/').'/admin/order/list/all');
@@ -1270,17 +1273,45 @@ class Helpers
                     'order_type' => 'parcel_order',
                     'image' => '',
                 ];
-                if($order->zone){
-                    if($order->dm_vehicle_id){
-                        
-                        $topic = 'delivery_man_'.$order->zone_id.'_'.$order->dm_vehicle_id;
+                if ($order->zone) {
+                    if ($order->dm_vehicle_id) {
+
+                        $topic = 'delivery_man_' . $order->zone_id . '_' . $order->dm_vehicle_id;
                         self::send_push_notif_to_topic($data, $topic, 'order_request');
                         self::send_push_notif_to_topic($data, $order->zone->deliveryman_wise_topic, 'order_request');
-                    }else{
+                    } else {
                         self::send_push_notif_to_topic($data, $order->zone->deliveryman_wise_topic, 'order_request');
                     }
                 }
                 // self::send_push_notif_to_topic($data, 'admin_message', 'order_request');
+            }
+
+            if ($order->order_type == 'delivery' && $order->order_status == 'confirmed') {
+                // $data = [
+                //     'title' => translate('messages.order_push_title'),
+                //     'description' => translate('messages.new_order_push_description'),
+                //     'order_id' => $order->id,
+                //     'module_id' => $order->module_id,
+                //     'order_type' => $order->order_type,
+                //     'image' => '',
+                // ];
+                $data = [
+                    'title' => translate('messages.order_push_title'),
+                    'description' => translate('messages.new_order_push_description'),
+                    'order_id' => '',
+                    'image' => '',
+                    'type' => ''
+                ];
+
+                $deliveryMen = DeliveryMan::where('store_id', $order->store_id)->get();
+                //Log::debug(print_r($deliveryMen));
+                //self::send_push_notif_to_device("d-BZkYCjSJqRlSNgYJrin1:APA91bGqUjfQ0F0bOQ3lUIX3Krc0F6iRx9sg6LF4LBSAqzAQ2GD6iN1QZvPljrIyyi--Vh6GD-WDDzeZNIRJma8AknJZePg_qtnlj54eWrKqpnGlsH5J6QqQ5YO7B8uTRAGp6Z9WtUVc", $data);
+
+
+                foreach ($deliveryMen as $dman) {
+
+                    self::send_push_notif_to_device($dman->fcm_token, $data);
+                }
             }
 
             if ($order->order_type == 'delivery' && !$order->scheduled && $order->order_status == 'pending' && $order->payment_method == 'cash_on_delivery' && config('order_confirmation_model') == 'store') {
@@ -1293,9 +1324,9 @@ class Helpers
                     'image' => '',
                     'type' => 'new_order',
                 ];
-                if($order->store && $order->store->vendor){
+                if ($order->store && $order->store->vendor) {
                     self::send_push_notif_to_device($order->store->vendor->firebase_token, $data);
-                    $web_push_link = url('/').'/store-panel/order/list/all';
+                    $web_push_link = url('/') . '/store-panel/order/list/all';
                     self::send_push_notif_to_topic($data, "store_panel_{$order->store_id}_message", 'new_order', $web_push_link);
                     // self::send_push_notif_to_topic($data, 'admin_message', 'order_request');
                     DB::table('user_notifications')->insert([
@@ -1315,9 +1346,9 @@ class Helpers
                     'image' => '',
                     'type' => 'new_order',
                 ];
-                if($order->store && $order->store->vendor){
+                if ($order->store && $order->store->vendor) {
                     self::send_push_notif_to_device($order->store->vendor->firebase_token, $data);
-                    $web_push_link = url('/').'/store-panel/order/list/all';
+                    $web_push_link = url('/') . '/store-panel/order/list/all';
                     self::send_push_notif_to_topic($data, "store_panel_{$order->store_id}_message", 'new_order', $web_push_link);
                     DB::table('user_notifications')->insert([
                         'data' => json_encode($data),
@@ -1350,9 +1381,9 @@ class Helpers
                         'image' => '',
                         'type' => 'new_order',
                     ];
-                    if($order->store && $order->store->vendor){
+                    if ($order->store && $order->store->vendor) {
                         self::send_push_notif_to_device($order->store->vendor->firebase_token, $data);
-                        $web_push_link = url('/').'/store-panel/order/list/all';
+                        $web_push_link = url('/') . '/store-panel/order/list/all';
                         self::send_push_notif_to_topic($data, "store_panel_{$order->store_id}_message", 'new_order', $web_push_link);
                         DB::table('user_notifications')->insert([
                             'data' => json_encode($data),
@@ -1375,17 +1406,17 @@ class Helpers
                 ];
                 if ($order->store->self_delivery_system) {
                     self::send_push_notif_to_topic($data, "restaurant_dm_" . $order->store_id, 'order_request');
-                } else
-                 {if($order->zone){
-                    if($order->dm_vehicle_id){
-                        
-                        $topic = 'delivery_man_'.$order->zone_id.'_'.$order->dm_vehicle_id;
-                        self::send_push_notif_to_topic($data, $topic, 'order_request');
-                        self::send_push_notif_to_topic($data, $order->zone->deliveryman_wise_topic, 'order_request');
-                    }else{
-                        self::send_push_notif_to_topic($data, $order->zone->deliveryman_wise_topic, 'order_request');
+                } else {
+                    if ($order->zone) {
+                        if ($order->dm_vehicle_id) {
+
+                            $topic = 'delivery_man_' . $order->zone_id . '_' . $order->dm_vehicle_id;
+                            self::send_push_notif_to_topic($data, $topic, 'order_request');
+                            self::send_push_notif_to_topic($data, $order->zone->deliveryman_wise_topic, 'order_request');
+                        } else {
+                            self::send_push_notif_to_topic($data, $order->zone->deliveryman_wise_topic, 'order_request');
+                        }
                     }
-                 }
                 }
             }
 
@@ -1407,7 +1438,7 @@ class Helpers
             }
             try {
                 if ($order->order_status == 'confirmed' && $order->payment_method != 'cash_on_delivery' && config('mail.status')) {
-                        Mail::to($order->customer->email)->send(new PlaceOrder($order->id));
+                    Mail::to($order->customer->email)->send(new PlaceOrder($order->id));
                 }
             } catch (\Exception $ex) {
                 info($ex);
@@ -1890,7 +1921,8 @@ class Helpers
     //     return $user_name . $user_id;
     // }
 
-    public static function generate_referer_code() {
+    public static function generate_referer_code()
+    {
         $ref_code = strtoupper(Str::random(10));
 
         if (self::referer_code_exists($ref_code)) {
@@ -1900,11 +1932,13 @@ class Helpers
         return $ref_code;
     }
 
-    public static function referer_code_exists($ref_code) {
+    public static function referer_code_exists($ref_code)
+    {
         return User::where('ref_code', '=', $ref_code)->exists();
     }
 
-    public static function number_format_short( $n ) {
+    public static function number_format_short($n)
+    {
         if ($n < 900) {
             // 0 - 900
             $n = $n;
@@ -1927,222 +1961,235 @@ class Helpers
             $suffix = 'T';
         }
 
-        if(!session()->has('currency_symbol_position')){
+        if (!session()->has('currency_symbol_position')) {
             $currency_symbol_position = BusinessSetting::where(['key' => 'currency_symbol_position'])->first()->value;
-            session()->put('currency_symbol_position',$currency_symbol_position);
+            session()->put('currency_symbol_position', $currency_symbol_position);
         }
         $currency_symbol_position = session()->get('currency_symbol_position');
 
-        return $currency_symbol_position == 'right' ? number_format($n, config('round_up_to_digit')).$suffix . ' ' . self::currency_symbol() : self::currency_symbol() . ' ' . number_format($n, config('round_up_to_digit')).$suffix;
+        return $currency_symbol_position == 'right' ? number_format($n, config('round_up_to_digit')) . $suffix . ' ' . self::currency_symbol() : self::currency_symbol() . ' ' . number_format($n, config('round_up_to_digit')) . $suffix;
     }
-    public static function export_attributes($collection){
+    public static function export_attributes($collection)
+    {
         $data = [];
-        foreach($collection as $key=>$item){
+        foreach ($collection as $key => $item) {
             $data[] = [
-                'SL'=>$key+1,
-                 translate('messages.id') => $item['id'],
-                 translate('messages.name') => $item['name'],
+                'SL' => $key + 1,
+                translate('messages.id') => $item['id'],
+                translate('messages.name') => $item['name'],
             ];
         }
         return $data;
     }
 
-    public static function push_notification_export_data($collection){
+    public static function push_notification_export_data($collection)
+    {
         $data = [];
-        foreach($collection as $key=>$item){
+        foreach ($collection as $key => $item) {
             $data[] = [
-                'SL'=>$key+1,
-                 translate('messages.id') => $item['id'],
-                 translate('messages.title') => $item['title'],
-                 translate('messages.description') => $item['description'],
-                 translate('messages.zone') => $item->zone?$item->zone->name: '',
-                 translate('messages.status') => $item['status'],
-                 translate('messages.tergat') => $item['tergat'],
+                'SL' => $key + 1,
+                translate('messages.id') => $item['id'],
+                translate('messages.title') => $item['title'],
+                translate('messages.description') => $item['description'],
+                translate('messages.zone') => $item->zone ? $item->zone->name : '',
+                translate('messages.status') => $item['status'],
+                translate('messages.tergat') => $item['tergat'],
             ];
         }
         return $data;
     }
 
-    public static function export_categories($collection){
+    public static function export_categories($collection)
+    {
         $data = [];
-        foreach($collection as $key=>$item){
+        foreach ($collection as $key => $item) {
             $data[] = [
-                'SL'=>$key+1,
-                 translate('messages.id') => $item['id'],
-                 translate('messages.name') => $item['name'],
-                 translate('messages.module') => $item->module->module_name,
-                 translate('messages.status') => $item['status'],
-                 translate('messages.priority') => $item['priority'],
+                'SL' => $key + 1,
+                translate('messages.id') => $item['id'],
+                translate('messages.name') => $item['name'],
+                translate('messages.module') => $item->module->module_name,
+                translate('messages.status') => $item['status'],
+                translate('messages.priority') => $item['priority'],
             ];
         }
         return $data;
     }
 
-    public static function export_store_withdraw($collection){
+    public static function export_store_withdraw($collection)
+    {
         $data = [];
-        $status = ['pending','approved','denied'];
-        foreach($collection as $key=>$item){
+        $status = ['pending', 'approved', 'denied'];
+        foreach ($collection as $key => $item) {
             $data[] = [
-                'SL'=>$key+1,
-                 translate('messages.amount') => $item->amount,
-                 translate('messages.store') => isset($item->vendor) ? $item->vendor->stores[0]->name : '',
-                 translate('messages.request_time') => date('Y-m-d '.config('timeformat'),strtotime($item->created_at)),
-                 translate('messages.status') => isset($status[$item->approved])?translate("messages.".$status[$item->approved]):"",
+                'SL' => $key + 1,
+                translate('messages.amount') => $item->amount,
+                translate('messages.store') => isset($item->vendor) ? $item->vendor->stores[0]->name : '',
+                translate('messages.request_time') => date('Y-m-d ' . config('timeformat'), strtotime($item->created_at)),
+                translate('messages.status') => isset($status[$item->approved]) ? translate("messages." . $status[$item->approved]) : "",
             ];
         }
         return $data;
     }
 
-    public static function export_account_transaction($collection){
+    public static function export_account_transaction($collection)
+    {
         $data = [];
-        foreach($collection as $key=>$item){
+        foreach ($collection as $key => $item) {
             $data[] = [
-                'SL'=>$key+1,
-                 translate('messages.collect_from') => $item->store ? $item->store->name : ($item->deliveryman ? $item->deliveryman->f_name . ' ' . $item->deliveryman->l_name : translate('messages.not_found')),
-                 translate('messages.type') => $item->from_type,
-                 translate('messages.received_at') => $item->created_at->format('Y-m-d '.config('timeformat')),
-                 translate('messages.amount') => $item->amount,
-                 translate('messages.reference') => $item->ref,
+                'SL' => $key + 1,
+                translate('messages.collect_from') => $item->store ? $item->store->name : ($item->deliveryman ? $item->deliveryman->f_name . ' ' . $item->deliveryman->l_name : translate('messages.not_found')),
+                translate('messages.type') => $item->from_type,
+                translate('messages.received_at') => $item->created_at->format('Y-m-d ' . config('timeformat')),
+                translate('messages.amount') => $item->amount,
+                translate('messages.reference') => $item->ref,
             ];
         }
         return $data;
     }
 
-    public static function export_dm_earning($collection){
+    public static function export_dm_earning($collection)
+    {
         $data = [];
-        foreach($collection as $key=>$item){
+        foreach ($collection as $key => $item) {
             $data[] = [
-                'SL'=>$key+1,
-                translate('messages.name') => isset($item->delivery_man) ? $item->delivery_man->f_name.' '.$item->delivery_man->l_name : translate('messages.not_found'),
-                 translate('messages.received_at') => $item->created_at->format('Y-m-d '.config('timeformat')),
-                 translate('messages.amount') => $item->amount,
-                 translate('messages.method') => $item->method,
-                 translate('messages.reference') => $item->ref,
+                'SL' => $key + 1,
+                translate('messages.name') => isset($item->delivery_man) ? $item->delivery_man->f_name . ' ' . $item->delivery_man->l_name : translate('messages.not_found'),
+                translate('messages.received_at') => $item->created_at->format('Y-m-d ' . config('timeformat')),
+                translate('messages.amount') => $item->amount,
+                translate('messages.method') => $item->method,
+                translate('messages.reference') => $item->ref,
             ];
         }
         return $data;
     }
 
-    public static function export_items($collection){
+    public static function export_items($collection)
+    {
         $data = [];
-        foreach($collection as $key=>$item){
+        foreach ($collection as $key => $item) {
             $data[] = [
-                'SL'=>$key+1,
-                 translate('messages.id') => $item['id'],
-                 translate('messages.name') => $item['name'],
-                 translate('messages.category') => $item->category?$item->category->name:'',
-                 translate('messages.store') => $item->store?$item->store->name:'',
-                 translate('messages.price') => $item['price'],
-                 translate('messages.status') => $item['status'],
+                'SL' => $key + 1,
+                translate('messages.id') => $item['id'],
+                translate('messages.name') => $item['name'],
+                translate('messages.category') => $item->category ? $item->category->name : '',
+                translate('messages.store') => $item->store ? $item->store->name : '',
+                translate('messages.price') => $item['price'],
+                translate('messages.status') => $item['status'],
             ];
         }
         return $data;
     }
 
-    public static function export_store_item($collection){
+    public static function export_store_item($collection)
+    {
         $data = [];
-        foreach($collection as $key=>$item){
+        foreach ($collection as $key => $item) {
             $data[] = [
-                'SL'=>$key+1,
-                 translate('messages.id') => $item['id'],
-                 translate('messages.name') => $item['name'],
-                 translate('messages.type') => $item->category?$item->category->name:'',
-                 translate('messages.price') => $item['price'],
-                 translate('messages.status') => $item['status'],
+                'SL' => $key + 1,
+                translate('messages.id') => $item['id'],
+                translate('messages.name') => $item['name'],
+                translate('messages.type') => $item->category ? $item->category->name : '',
+                translate('messages.price') => $item['price'],
+                translate('messages.status') => $item['status'],
             ];
         }
         return $data;
     }
 
-    public static function export_stores($collection){
+    public static function export_stores($collection)
+    {
         $data = [];
-        foreach($collection as $key=>$item){
+        foreach ($collection as $key => $item) {
             $data[] = [
-                'SL'=>$key+1,
-                 translate('messages.id') => $item['id'],
-                 translate('messages.store_name') => $item['name'],
-                 translate('messages.store_phone') => $item['phone'],
-                 translate('messages.module') => $item->module->module_name,
-                 translate('messages.owner_name') => $item->vendor->f_name.' '.$item->vendor->l_name,
-                 translate('messages.owner_phone') => $item->vendor->phone,
-                 translate('messages.zone') => $item->zone?$item->zone->name:'',
-                 translate('messages.featured') => $item['featured'],
-                 translate('messages.status') => $item['status'],
+                'SL' => $key + 1,
+                translate('messages.id') => $item['id'],
+                translate('messages.store_name') => $item['name'],
+                translate('messages.store_phone') => $item['phone'],
+                translate('messages.module') => $item->module->module_name,
+                translate('messages.owner_name') => $item->vendor->f_name . ' ' . $item->vendor->l_name,
+                translate('messages.owner_phone') => $item->vendor->phone,
+                translate('messages.zone') => $item->zone ? $item->zone->name : '',
+                translate('messages.featured') => $item['featured'],
+                translate('messages.status') => $item['status'],
             ];
         }
         return $data;
     }
 
-    public static function export_units($collection){
+    public static function export_units($collection)
+    {
         $data = [];
-        foreach($collection as $key=>$item){
+        foreach ($collection as $key => $item) {
             $data[] = [
-                'SL'=>$key+1,
-                 translate('messages.id') => $item['id'],
-                 translate('messages.unit') => $item['unit'],
+                'SL' => $key + 1,
+                translate('messages.id') => $item['id'],
+                translate('messages.unit') => $item['unit'],
             ];
         }
         return $data;
     }
 
-    public static function export_customers($collection){
+    public static function export_customers($collection)
+    {
         $data = [];
-        foreach($collection as $key=>$item){
+        foreach ($collection as $key => $item) {
             $data[] = [
-                'SL'=>$key+1,
-                 translate('messages.id') => $item['id'],
-                 translate('messages.name') => $item->f_name.' '.$item->l_name,
-                 translate('messages.phone') => $item['phone'],
-                 translate('messages.email') => $item['email'],
-                 translate('messages.total_order') => $item['order_count'],
-                 translate('messages.status') => $item['status'],
+                'SL' => $key + 1,
+                translate('messages.id') => $item['id'],
+                translate('messages.name') => $item->f_name . ' ' . $item->l_name,
+                translate('messages.phone') => $item['phone'],
+                translate('messages.email') => $item['email'],
+                translate('messages.total_order') => $item['order_count'],
+                translate('messages.status') => $item['status'],
             ];
         }
         return $data;
     }
 
-    public static function export_day_wise_report($collection){
+    public static function export_day_wise_report($collection)
+    {
         $data = [];
-        foreach($collection as $key=>$item){
+        foreach ($collection as $key => $item) {
             $data[] = [
-                'SL'=>$key+1,
-                 translate('messages.order_id') => $item['order_id'],
-                 translate('messages.store')=>$item->order->store?$item->order->store->name:translate('messages.invalid'),
-                 translate('messages.customer_name')=>$item->order->customer?$item->order->customer['f_name'].' '.$item->order->customer['l_name']:translate('messages.invalid').' '.translate('messages.customer').' '.translate('messages.data'),
-                 translate('total_item_amount')=>\App\CentralLogics\Helpers::format_currency($item->order['order_amount'] - $item->order['dm_tips']-$item->order['delivery_charge'] - $item['tax'] + $item->order['coupon_discount_amount'] + $item->order['store_discount_amount']),
-                 translate('item_discount')=>\App\CentralLogics\Helpers::format_currency($item->order->details->sum('discount_on_item')),
-                 translate('coupon_discount')=>\App\CentralLogics\Helpers::format_currency($item->order['coupon_discount_amount']),
-                 translate('discounted_amount')=>\App\CentralLogics\Helpers::format_currency($item->order['coupon_discount_amount'] + $item->order['store_discount_amount']),
-                 translate('messages.tax')=>\App\CentralLogics\Helpers::format_currency($item->order['total_tax_amount']),
-                 translate('messages.delivery_charge')=>\App\CentralLogics\Helpers::format_currency($item['delivery_charge']),
-                 translate('messages.total_order_amount') => \App\CentralLogics\Helpers::format_currency($item['order_amount']),
-                 translate('messages.admin_discount') => \App\CentralLogics\Helpers::format_currency($item['admin_expense']),
-                 translate('messages.store_discount') => \App\CentralLogics\Helpers::format_currency($item->order['store_discount_amount']),
-                 translate('messages.admin_commission') => \App\CentralLogics\Helpers::format_currency(($item->admin_commission + $item->admin_expense) - $item->delivery_fee_comission),
-                 translate('Comission on delivery fee') => \App\CentralLogics\Helpers::format_currency($item['delivery_fee_comission']),
-                 translate('admin_net_income') => \App\CentralLogics\Helpers::format_currency($item['admin_commission']),
-                 translate('store_net_income') => \App\CentralLogics\Helpers::format_currency($item['store_amount'] - $item['tax']),
-                 translate('messages.amount_received_by') => $item['received_by'],
-                 translate('messages.payment_method')=>translate(str_replace('_', ' ', $item->order['payment_method'])),
-                 translate('messages.payment_status') => $item->status ? translate("messages.refunded") : translate("messages.completed"),
+                'SL' => $key + 1,
+                translate('messages.order_id') => $item['order_id'],
+                translate('messages.store') => $item->order->store ? $item->order->store->name : translate('messages.invalid'),
+                translate('messages.customer_name') => $item->order->customer ? $item->order->customer['f_name'] . ' ' . $item->order->customer['l_name'] : translate('messages.invalid') . ' ' . translate('messages.customer') . ' ' . translate('messages.data'),
+                translate('total_item_amount') => \App\CentralLogics\Helpers::format_currency($item->order['order_amount'] - $item->order['dm_tips'] - $item->order['delivery_charge'] - $item['tax'] + $item->order['coupon_discount_amount'] + $item->order['store_discount_amount']),
+                translate('item_discount') => \App\CentralLogics\Helpers::format_currency($item->order->details->sum('discount_on_item')),
+                translate('coupon_discount') => \App\CentralLogics\Helpers::format_currency($item->order['coupon_discount_amount']),
+                translate('discounted_amount') => \App\CentralLogics\Helpers::format_currency($item->order['coupon_discount_amount'] + $item->order['store_discount_amount']),
+                translate('messages.tax') => \App\CentralLogics\Helpers::format_currency($item->order['total_tax_amount']),
+                translate('messages.delivery_charge') => \App\CentralLogics\Helpers::format_currency($item['delivery_charge']),
+                translate('messages.total_order_amount') => \App\CentralLogics\Helpers::format_currency($item['order_amount']),
+                translate('messages.admin_discount') => \App\CentralLogics\Helpers::format_currency($item['admin_expense']),
+                translate('messages.store_discount') => \App\CentralLogics\Helpers::format_currency($item->order['store_discount_amount']),
+                translate('messages.admin_commission') => \App\CentralLogics\Helpers::format_currency(($item->admin_commission + $item->admin_expense) - $item->delivery_fee_comission),
+                translate('Comission on delivery fee') => \App\CentralLogics\Helpers::format_currency($item['delivery_fee_comission']),
+                translate('admin_net_income') => \App\CentralLogics\Helpers::format_currency($item['admin_commission']),
+                translate('store_net_income') => \App\CentralLogics\Helpers::format_currency($item['store_amount'] - $item['tax']),
+                translate('messages.amount_received_by') => $item['received_by'],
+                translate('messages.payment_method') => translate(str_replace('_', ' ', $item->order['payment_method'])),
+                translate('messages.payment_status') => $item->status ? translate("messages.refunded") : translate("messages.completed"),
             ];
         }
         return $data;
     }
 
 
-    public static function export_expense_wise_report($collection){
+    public static function export_expense_wise_report($collection)
+    {
         $data = [];
-        foreach($collection as $key=>$item){
-            if(isset($item->order->customer)){
-                            $customer_name= $item->order->customer->f_name.' '.$item->order->customer->l_name;
-                                }
+        foreach ($collection as $key => $item) {
+            if (isset($item->order->customer)) {
+                $customer_name = $item->order->customer->f_name . ' ' . $item->order->customer->l_name;
+            }
             $data[] = [
-                'SL'=>$key+1,
+                'SL' => $key + 1,
                 translate('messages.order_id') => $item['order_id'],
                 translate('messages.expense_date') =>  $item['created_at'],
                 // translate('messages.expense_date') =>  $item->created_at->format('Y-m-d '.config('timeformat')),
-                translate('messages.type') => str::title( str_replace('_', ' ',  $item['type'])),
+                translate('messages.type') => str::title(str_replace('_', ' ',  $item['type'])),
                 translate('messages.customer_name') => $customer_name,
                 translate('messages.amount') => $item['amount'],
             ];
@@ -2150,65 +2197,69 @@ class Helpers
         return $data;
     }
 
-    public static function export_item_wise_report($collection){
+    public static function export_item_wise_report($collection)
+    {
         $data = [];
-        foreach($collection as $key=>$item){
+        foreach ($collection as $key => $item) {
             $data[] = [
-                'SL'=>$key+1,
-                 translate('messages.id') => $item['id'],
-                 translate('messages.name') => $item['name'],
-                 translate('messages.module') =>$item->module ? $item->module->module_name : '',
-                 translate('messages.store') => $item->store ? $item->store->name : '',
-                 translate('messages.order') => $item->orders_count,
-                 translate('messages.price') => \App\CentralLogics\Helpers::format_currency($item->price),
-                 translate('messages.total_amount_sold') => \App\CentralLogics\Helpers::format_currency($item->orders_sum_price),
-                 translate('messages.total_discount_given') => \App\CentralLogics\Helpers::format_currency($item->orders_sum_discount_on_item),
-                 translate('messages.average_sale_value') => $item->orders_count>0? \App\CentralLogics\Helpers::format_currency(($item->orders_sum_price-$item->orders_sum_discount_on_item)/$item->orders_count):0 ,
-                 translate('messages.average_ratings') => round($item->avg_rating,1),
+                'SL' => $key + 1,
+                translate('messages.id') => $item['id'],
+                translate('messages.name') => $item['name'],
+                translate('messages.module') => $item->module ? $item->module->module_name : '',
+                translate('messages.store') => $item->store ? $item->store->name : '',
+                translate('messages.order') => $item->orders_count,
+                translate('messages.price') => \App\CentralLogics\Helpers::format_currency($item->price),
+                translate('messages.total_amount_sold') => \App\CentralLogics\Helpers::format_currency($item->orders_sum_price),
+                translate('messages.total_discount_given') => \App\CentralLogics\Helpers::format_currency($item->orders_sum_discount_on_item),
+                translate('messages.average_sale_value') => $item->orders_count > 0 ? \App\CentralLogics\Helpers::format_currency(($item->orders_sum_price - $item->orders_sum_discount_on_item) / $item->orders_count) : 0,
+                translate('messages.average_ratings') => round($item->avg_rating, 1),
             ];
         }
         return $data;
     }
 
-    public static function export_stock_wise_report($collection){
+    public static function export_stock_wise_report($collection)
+    {
         $data = [];
-        foreach($collection as $key=>$item){
+        foreach ($collection as $key => $item) {
             $data[] = [
-                'SL'=>$key+1,
-                 translate('messages.id') => $item['id'],
-                 translate('messages.name') => $item['name'],
-                 translate('messages.store') => $item->store?$item->store->name : '',
-                 translate('messages.zone') => ($item->store && $item->store->zone) ? $item->store->zone->name:'',
-                 translate('messages.stock') => $item['stock'],
+                'SL' => $key + 1,
+                translate('messages.id') => $item['id'],
+                translate('messages.name') => $item['name'],
+                translate('messages.store') => $item->store ? $item->store->name : '',
+                translate('messages.zone') => ($item->store && $item->store->zone) ? $item->store->zone->name : '',
+                translate('messages.stock') => $item['stock'],
             ];
         }
         return $data;
     }
 
-    public static function export_delivery_men($collection){
+    public static function export_delivery_men($collection)
+    {
         $data = [];
-        foreach($collection as $key=>$item){
+        foreach ($collection as $key => $item) {
             $data[] = [
-                'SL'=>$key+1,
-                 translate('messages.id') => $item['id'],
-                 translate('messages.name') => $item->f_name.' '.$item->l_name,
-                 translate('messages.phone') => $item['phone'],
-                 translate('messages.zone') => $item->zone?$item->zone->name:'',
-                 translate('messages.total_order') => $item['order_count'],
-                 translate('messages.currently_assigned_orders') => (int) $item['current_orders'],
-                 translate('messages.status') => $item['status'],
+                'SL' => $key + 1,
+                translate('messages.id') => $item['id'],
+                translate('messages.name') => $item->f_name . ' ' . $item->l_name,
+                translate('messages.phone') => $item['phone'],
+                translate('messages.zone') => $item->zone ? $item->zone->name : '',
+                translate('messages.total_order') => $item['order_count'],
+                translate('messages.currently_assigned_orders') => (int) $item['current_orders'],
+                translate('messages.status') => $item['status'],
             ];
         }
         return $data;
     }
 
-    public static function hex_to_rbg($color){
+    public static function hex_to_rbg($color)
+    {
         list($r, $g, $b) = sscanf($color, "#%02x%02x%02x");
         $output = "$r, $g, $b";
         return $output;
     }
 
-    public static function expenseCreate($amount,$type,$datetime,$order_id,$created_by,$store_id=null,$description='',$delivery_man_id=null)
+    public static function expenseCreate($amount, $type, $datetime, $order_id, $created_by, $store_id = null, $description = '', $delivery_man_id = null)
     {
         $expense = new Expense();
         $expense->amount = $amount;
@@ -2228,13 +2279,13 @@ class Helpers
         $result = [];
         $variation_price = 0;
 
-        foreach($variations as $k=> $variation){
-            foreach($product_variations as  $product_variation){
-                if( isset($variation['values']) && isset($product_variation['values']) && $product_variation['name'] == $variation['name']  ){
+        foreach ($variations as $k => $variation) {
+            foreach ($product_variations as  $product_variation) {
+                if (isset($variation['values']) && isset($product_variation['values']) && $product_variation['name'] == $variation['name']) {
                     $result[$k] = $product_variation;
                     $result[$k]['values'] = [];
-                    foreach($product_variation['values'] as $key=> $option){
-                        if(in_array($option['label'], $variation['values']['label'])){
+                    foreach ($product_variation['values'] as $key => $option) {
+                        if (in_array($option['label'], $variation['values']['label'])) {
                             $result[$k]['values'][] = $option;
                             $variation_price += $option['optionPrice'];
                         }
@@ -2243,7 +2294,7 @@ class Helpers
             }
         }
 
-        return ['price'=>$variation_price,'variations'=>$result];
+        return ['price' => $variation_price, 'variations' => $result];
     }
 
     public static function food_variation_price($product, $variations)
@@ -2256,22 +2307,22 @@ class Helpers
         //         $result = $value['price'];
         //     }
         // }
-            foreach($product as $product_variation){
-                foreach($product_variation['values'] as $option){
-                    foreach($match as $variation){
-                        if($product_variation['name'] == $variation['name'] && isset($variation['values']) && in_array($option['label'], $variation['values']['label'])){
-                            $result += $option['optionPrice'];
-                        }
+        foreach ($product as $product_variation) {
+            foreach ($product_variation['values'] as $option) {
+                foreach ($match as $variation) {
+                    if ($product_variation['name'] == $variation['name'] && isset($variation['values']) && in_array($option['label'], $variation['values']['label'])) {
+                        $result += $option['optionPrice'];
                     }
                 }
             }
+        }
 
         return $result;
     }
 
     public static function gen_mpdf($view, $file_prefix, $file_postfix)
     {
-        $mpdf = new \Mpdf\Mpdf(['tempDir' => __DIR__ . '/../../storage/tmp','default_font' => 'FreeSerif', 'mode' => 'utf-8', 'format' => [190, 250]]);
+        $mpdf = new \Mpdf\Mpdf(['tempDir' => __DIR__ . '/../../storage/tmp', 'default_font' => 'FreeSerif', 'mode' => 'utf-8', 'format' => [190, 250]]);
         /* $mpdf->AddPage('XL', '', '', '', '', 10, 10, 10, '10', '270', '');*/
         $mpdf->autoScriptToLang = true;
         $mpdf->autoLangToFont = true;
@@ -2286,7 +2337,7 @@ class Helpers
     {
         $res = file_get_contents("https://translate.googleapis.com/translate_a/single?client=gtx&ie=UTF-8&oe=UTF-8&dt=bd&dt=ex&dt=ld&dt=md&dt=qca&dt=rw&dt=rm&dt=ss&dt=t&dt=at&sl=" . $sl . "&tl=" . $tl . "&hl=hl&q=" . urlencode($q), $_SERVER['DOCUMENT_ROOT'] . "/transes.html");
         $res = json_decode($res);
-        return str_replace('_',' ',$res[0][0][0]);
+        return str_replace('_', ' ', $res[0][0][0]);
     }
 
     public static function getLanguageCode(string $country_code): string
@@ -2440,7 +2491,7 @@ class Helpers
         );
 
         foreach ($locales as $locale) {
-            $locale_region = explode('-',$locale);
+            $locale_region = explode('-', $locale);
             if ($country_code == $locale_region[0]) {
                 return $locale_region[0];
             }
@@ -2653,12 +2704,14 @@ class Helpers
     }
 
 
-    public static function product_tax($price , $tax, $is_include=false){
-        $price_tax = ($price * $tax) / (100 + ($is_include?$tax:0)) ;
+    public static function product_tax($price, $tax, $is_include = false)
+    {
+        $price_tax = ($price * $tax) / (100 + ($is_include ? $tax : 0));
         return $price_tax;
     }
 
-    public static function apple_client_secret(){
+    public static function apple_client_secret()
+    {
         // Set up the necessary variables
         $keyId = 'U7KA7F82UM';
         $teamId = '7WSYLQ8Y87';

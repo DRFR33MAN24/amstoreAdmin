@@ -278,6 +278,7 @@ Route::group(['namespace' => 'Admin', 'as' => 'admin.'], function () {
             });
         });
         Route::get('order/generate-invoice/{id}', 'OrderController@generate_invoice')->name('order.generate-invoice');
+        Route::get('order/delete/{id}', 'OrderController@delete')->name('order.delete');
         Route::get('order/print-invoice/{id}', 'OrderController@print_invoice')->name('order.print-invoice');
         Route::get('order/status', 'OrderController@status')->name('order.status');
         Route::group(['prefix' => 'order', 'as' => 'order.', 'middleware' => ['module:order']], function () {
@@ -599,6 +600,7 @@ Route::group(['namespace' => 'Admin', 'as' => 'admin.'], function () {
         Route::group(['prefix' => 'customer', 'as' => 'customer.', 'middleware' => ['module:customerList']], function () {
             Route::get('list', 'CustomerController@customer_list')->name('list');
             Route::get('view/{user_id}', 'CustomerController@view')->name('view');
+      
             Route::post('search', 'CustomerController@search')->name('search');
             Route::get('status/{customer}/{status}', 'CustomerController@status')->name('status');
         });
@@ -708,6 +710,7 @@ Route::group(['namespace' => 'Admin', 'as' => 'admin.'], function () {
             Route::group(['prefix' => 'customer', 'as' => 'customer.', 'middleware' => ['module:customerList']], function () {
                 Route::get('list', 'CustomerController@customer_list')->name('list');
                 Route::get('view/{user_id}', 'CustomerController@view')->name('view');
+             Route::get('remove_user/{user_id}', 'CustomerController@remove_user')->name('remove_user');
                 Route::post('search', 'CustomerController@search')->name('search');
                 Route::get('status/{customer}/{status}file-manager', 'CustomerController@status')->name('status');
             });

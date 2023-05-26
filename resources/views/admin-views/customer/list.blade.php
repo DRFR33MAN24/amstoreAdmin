@@ -255,11 +255,18 @@
                                         </label>
                                     </td>
                                     <td>
+                                        <div class="btn--container justify-content-center">
                                         <a class="btn action-btn btn--warning btn-outline-warning"
                                             href="{{ route('admin.users.customer.view', [$customer['id']]) }}"
                                             title="{{ translate('messages.view') }} {{ translate('messages.customer') }}"><i
                                                 class="tio-visible-outlined"></i>
                                         </a>
+                                                                                <a class="btn action-btn btn--danger btn-outline-danger"
+                                            href="{{ route('admin.users.customer.remove_user', [$customer['id']]) }}"
+                                            title="{{ translate('messages.delete') }} {{ translate('messages.customer') }}"><i
+                                                class="tio-delete-outlined"></i>
+                                        </a>
+                    </div>
                                     </td>
                                 </tr>
                             @endforeach

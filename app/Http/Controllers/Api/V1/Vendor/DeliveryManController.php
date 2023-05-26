@@ -4,58 +4,59 @@ namespace App\Http\Controllers\Api\V1\Vendor;
 
 use App\Http\Controllers\Controller;
 use App\Models\DeliveryMan;
+use App\Models\DeliveryManWallet;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use App\CentralLogics\Helpers;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Log;
 
 class DeliveryManController extends Controller
 {
     public function __construct(Request $request)
     {
         $this->middleware(function ($request, $next) {
-            if(!$request->vendor->stores[0]->self_delivery_system)
-            {
+            if (!$request->vendor->stores[0]->self_delivery_system) {
                 return response()->json([
-                    'errors'=>[
-                        ['code'=>'unauthorized', 'message'=>translate('messages.permission_denied')]
+                    'errors' => [
+                        ['code' => 'unauthorized', 'message' => translate('messages.permission_denied')]
                     ]
-                ],403);
+                ], 403);
             }
             return $next($request);
         });
-
     }
     public function list(Request $request)
     {
         $delivery_men = DeliveryMan::with(['rating'])
-        ->withCount(['orders'=>function($query){
-            $query->where('order_status','delivered');
-        }])
-        ->where('store_id', $request->vendor->stores[0]->id)->latest()->get()->map(function($data){
-            $data->identity_image = json_decode($data->identity_image);
-            $data->orders_count = (double)$data->orders_count;
-            $data['avg_rating'] = (double)(!empty($data->rating[0])?$data->rating[0]->average:0);
-            $data['rating_count'] = (double)(!empty($data->rating[0])?$data->rating[0]->rating_count:0);
-            $data['cash_in_hands'] =$data->wallet?$data->wallet->collected_cash:0;
-            unset($data['rating']);
-            unset($data['wallet']);
-            return $data;
-        });
-        return response()->json($delivery_men,200);
+            ->withCount(['orders' => function ($query) {
+                $query->where('order_status', 'delivered');
+            }])
+            ->where('store_id', $request->vendor->stores[0]->id)->latest()->get()->map(function ($data) {
+                $data->identity_image = json_decode($data->identity_image);
+                $data->orders_count = (float)$data->orders_count;
+                $data['avg_rating'] = (float)(!empty($data->rating[0]) ? $data->rating[0]->average : 0);
+                $data['rating_count'] = (float)(!empty($data->rating[0]) ? $data->rating[0]->rating_count : 0);
+                $data['cash_in_hands'] = $data->wallet ? $data->wallet->collected_cash : 0;
+                unset($data['rating']);
+                unset($data['wallet']);
+                return $data;
+            });
+        return response()->json($delivery_men, 200);
     }
 
-    public function search(Request $request){
+    public function search(Request $request)
+    {
         $validator = Validator::make($request->all(), [
             'search' => 'required',
         ]);
 
         if ($validator->fails()) {
-            return response()->json(['errors' => Helpers::error_processor($validator)],403);
+            return response()->json(['errors' => Helpers::error_processor($validator)], 403);
         }
         $key = explode(' ', $request['search']);
-        $delivery_men=DeliveryMan::where(function ($q) use ($key) {
+        $delivery_men = DeliveryMan::where(function ($q) use ($key) {
             foreach ($key as $value) {
                 $q->orWhere('f_name', 'like', "%{$value}%")
                     ->orWhere('l_name', 'like', "%{$value}%")
@@ -74,16 +75,16 @@ class DeliveryManController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json(['errors' => Helpers::error_processor($validator)],403);
+            return response()->json(['errors' => Helpers::error_processor($validator)], 403);
         }
         $dm = DeliveryMan::with(['reviews.customer', 'rating'])
-        ->withCount(['orders'=>function($query){
-            $query->where('order_status','delivered');
-        }])
-        ->where('store_id', $request->vendor->stores[0]->id)->where(['id' => $request->delivery_man_id])->first();
-        $dm['avg_rating'] = (double)(!empty($dm->rating[0])?$dm->rating[0]->average:0);
-        $dm['rating_count'] = (double)(!empty($dm->rating[0])?$dm->rating[0]->rating_count:0);
-        $dm['cash_in_hands'] =$dm->wallet?$dm->wallet->collected_cash:0;
+            ->withCount(['orders' => function ($query) {
+                $query->where('order_status', 'delivered');
+            }])
+            ->where('store_id', $request->vendor->stores[0]->id)->where(['id' => $request->delivery_man_id])->first();
+        $dm['avg_rating'] = (float)(!empty($dm->rating[0]) ? $dm->rating[0]->average : 0);
+        $dm['rating_count'] = (float)(!empty($dm->rating[0]) ? $dm->rating[0]->rating_count : 0);
+        $dm['cash_in_hands'] = $dm->wallet ? $dm->wallet->collected_cash : 0;
         unset($dm['rating']);
         unset($dm['wallet']);
         return response()->json($dm, 200);
@@ -97,12 +98,12 @@ class DeliveryManController extends Controller
             'identity_number' => 'required',
             'email' => 'required|unique:delivery_men',
             'phone' => 'required|regex:/^([0-9\s\-\+\(\)]*)$/|min:10|unique:delivery_men',
-            'password'=>'required|min:6',
+            'password' => 'required|min:6',
             'vehicle_id' => 'required',
         ]);
 
         if ($validator->fails()) {
-            return response()->json(['errors' => Helpers::error_processor($validator)],403);
+            return response()->json(['errors' => Helpers::error_processor($validator)], 403);
         }
 
         if ($request->has('image')) {
@@ -122,7 +123,7 @@ class DeliveryManController extends Controller
             $identity_image = json_encode([]);
         }
 
-        $dm = New DeliveryMan();
+        $dm = new DeliveryMan();
         $dm->f_name = $request->f_name;
         $dm->l_name = $request->l_name;
         $dm->email = $request->email;
@@ -147,52 +148,59 @@ class DeliveryManController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'delivery_man_id' => 'required',
-            'status' => 'required|boolean',
+            'status' => 'required|integer',
+            'collect' => 'required|integer'
         ]);
 
         if ($validator->fails()) {
-            return response()->json(['errors' => Helpers::error_processor($validator)],403);
+            return response()->json(['errors' => Helpers::error_processor($validator)], 403);
         }
 
         $delivery_man = DeliveryMan::find($request->delivery_man_id);
-        if(!$delivery_man)
-        {
+        $dmwallet = DeliveryManWallet::where(['delivery_man_id' => $request->delivery_man_id]);
+        //Log::debug(json_encode($request->collect));
+        if (!$delivery_man) {
             return response()->json([
-                'errors'=>[
-                    ['code'=>'delivery_man_id', 'message'=>translate('messages.not_found')]
+                'errors' => [
+                    ['code' => 'delivery_man_id', 'message' => translate('messages.not_found')]
                 ]
-            ],404);
+            ], 404);
         }
-        $delivery_man->status = $request->status;
+        if ($request->status != -1) {
+            # code...
+            $delivery_man->status = $request->status;
+        }
 
-        try
-        {
-            if($request->status == 0)
-            {   $delivery_man->auth_token = null;
-                if(isset($delivery_man->fcm_token))
-                {
+        try {
+            if ($request->status == 0) {
+                $delivery_man->auth_token = null;
+                if (isset($delivery_man->fcm_token)) {
                     $data = [
                         'title' => translate('messages.suspended'),
                         'description' => translate('messages.your_account_has_been_suspended'),
                         'order_id' => '',
                         'image' => '',
-                        'type'=> 'block'
+                        'type' => 'block'
                     ];
                     Helpers::send_push_notif_to_device($delivery_man->fcm_token, $data);
 
                     DB::table('user_notifications')->insert([
-                        'data'=> json_encode($data),
-                        'delivery_man_id'=>$delivery_man->id,
-                        'created_at'=>now(),
-                        'updated_at'=>now()
+                        'data' => json_encode($data),
+                        'delivery_man_id' => $delivery_man->id,
+                        'created_at' => now(),
+                        'updated_at' => now()
                     ]);
                 }
-
             }
 
-        }
-        catch (\Exception $e) {
+            if ($request->collect == 1) {
+                if ($dmwallet) {
 
+
+                    $dmwallet->update(['collected_cash' => 0]);
+                }
+            }
+        } catch (\Exception $e) {
         }
 
         $delivery_man->save();
@@ -204,24 +212,23 @@ class DeliveryManController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'f_name' => 'required',
-            'email' => 'required|unique:delivery_men,email,'.$id,
-            'phone' => 'required|regex:/^([0-9\s\-\+\(\)]*)$/|min:10|unique:delivery_men,phone,'.$id,
-            'password'=>'nullable|min:6',
+            'email' => 'required|unique:delivery_men,email,' . $id,
+            'phone' => 'required|regex:/^([0-9\s\-\+\(\)]*)$/|min:10|unique:delivery_men,phone,' . $id,
+            'password' => 'nullable|min:6',
             'vehicle_id' => 'required',
         ]);
 
         if ($validator->fails()) {
-            return response()->json(['errors' => Helpers::error_processor($validator)],403);
+            return response()->json(['errors' => Helpers::error_processor($validator)], 403);
         }
 
         $delivery_man = DeliveryMan::find($id);
-        if(!$delivery_man)
-        {
+        if (!$delivery_man) {
             return response()->json([
-                'errors'=>[
-                    ['code'=>'delivery_man_id', 'message'=>translate('messages.not_found')]
+                'errors' => [
+                    ['code' => 'delivery_man_id', 'message' => translate('messages.not_found')]
                 ]
-            ],404);
+            ], 404);
         }
         if ($request->has('image')) {
             $image_name = Helpers::update('delivery-man/', $delivery_man->image, 'png', $request->file('image'));
@@ -229,7 +236,7 @@ class DeliveryManController extends Controller
             $image_name = $delivery_man['image'];
         }
 
-        if ($request->has('identity_image')){
+        if ($request->has('identity_image')) {
             foreach (json_decode($delivery_man['identity_image'], true) as $img) {
                 if (Storage::disk('public')->exists('delivery-man/' . $img)) {
                     Storage::disk('public')->delete('delivery-man/' . $img);
@@ -255,7 +262,7 @@ class DeliveryManController extends Controller
         $delivery_man->vehicle_id = $request->vehicle_id;
         $delivery_man->image = $image_name;
 
-        $delivery_man->password = strlen($request->password)>1?bcrypt($request->password):$delivery_man['password'];
+        $delivery_man->password = strlen($request->password) > 1 ? bcrypt($request->password) : $delivery_man['password'];
         $delivery_man->save();
 
         return response()->json(['message' => translate('messages.deliveryman_updated_successfully')], 200);
@@ -270,17 +277,16 @@ class DeliveryManController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json(['errors' => Helpers::error_processor($validator)],403);
+            return response()->json(['errors' => Helpers::error_processor($validator)], 403);
         }
 
         $delivery_man = DeliveryMan::find($request->delivery_man_id);
-        if(!$delivery_man)
-        {
+        if (!$delivery_man) {
             return response()->json([
-                'errors'=>[
-                    ['code'=>'delivery_man_id', 'message'=>translate('messages.not_found')]
+                'errors' => [
+                    ['code' => 'delivery_man_id', 'message' => translate('messages.not_found')]
                 ]
-            ],404);
+            ], 404);
         }
         if (Storage::disk('public')->exists('delivery-man/' . $delivery_man['image'])) {
             Storage::disk('public')->delete('delivery-man/' . $delivery_man['image']);

@@ -24,6 +24,11 @@ use Illuminate\Support\Facades\DB;
 use App\CentralLogics\ProductLogic;
 use App\CentralLogics\CustomerLogic;
 use App\Http\Controllers\Controller;
+use App\Models\DeliveryHistory;
+use App\Models\DMReview;
+use App\Models\OrderDeliveryHistory;
+use App\Models\Review;
+use App\Models\TrackDeliveryman;
 use Brian2694\Toastr\Facades\Toastr;
 use Rap2hpoutre\FastExcel\FastExcel;
 use Grimzy\LaravelMysqlSpatial\Types\Point;
@@ -128,7 +133,7 @@ class OrderController extends Controller
         return view('admin-views.order.list', compact('orders', 'status', 'orderstatus', 'scheduled', 'vendor_ids', 'zone_ids', 'from_date', 'to_date', 'total', 'order_type'));
     }
 
-    public function dispatch_list($module,$status, Request $request)
+    public function dispatch_list($module, $status, Request $request)
     {
         $module_id = $request->query('module_id', null);
 
@@ -140,7 +145,7 @@ class OrderController extends Controller
         Order::where(['checked' => 0])->update(['checked' => 1]);
 
         $orders = Order::with(['customer', 'store'])
-            ->whereHas('module', function($query) use($module){
+            ->whereHas('module', function ($query) use ($module) {
                 $query->where('id', $module);
             })
             ->when(isset($module_id), function ($query) use ($module_id) {
@@ -178,7 +183,7 @@ class OrderController extends Controller
         $to_date = isset($request->to_date) ? $request->to_date : null;
         $total = $orders->total();
 
-        return view('admin-views.order.distaptch_list', compact('orders','module', 'status', 'orderstatus', 'scheduled', 'vendor_ids', 'zone_ids', 'from_date', 'to_date', 'total'));
+        return view('admin-views.order.distaptch_list', compact('orders', 'module', 'status', 'orderstatus', 'scheduled', 'vendor_ids', 'zone_ids', 'from_date', 'to_date', 'total'));
     }
 
     public function details(Request $request, $id)
@@ -197,19 +202,19 @@ class OrderController extends Controller
         if (isset($order)) {
             if (isset($order->store)) {
                 $deliveryMen = DeliveryMan::where('zone_id', $order->store->zone_id)
-                ->where(function($query)use($order){
-                            $query->where('vehicle_id',$order->dm_vehicle_id)->orWhereNull('vehicle_id');
+                    ->where(function ($query) use ($order) {
+                        $query->where('vehicle_id', $order->dm_vehicle_id)->orWhereNull('vehicle_id');
                     })->available()->active()->get();
             } else {
                 // $deliveryMen = isset($order->zone_id) ? DeliveryMan::where('zone_id', $order->zone_id)->zonewise()->available()->active()->get() : [];
 
-                if($order->store !== null){
-                    $deliveryMen = isset($order->zone_id) ? DeliveryMan::where('zone_id', $order->store->zone_id)->where(function($query)use($order){
-                            $query->where('vehicle_id',$order->dm_vehicle_id)->orWhereNull('vehicle_id');
+                if ($order->store !== null) {
+                    $deliveryMen = isset($order->zone_id) ? DeliveryMan::where('zone_id', $order->store->zone_id)->where(function ($query) use ($order) {
+                        $query->where('vehicle_id', $order->dm_vehicle_id)->orWhereNull('vehicle_id');
                     })
-                    ->available()->active()->get():[];
-                } else{
-                    $deliveryMen = DeliveryMan::where('zone_id', '=', NULL)->where('vehicle_id',$order->dm_vehicle_id)->active()->get();
+                        ->available()->active()->get() : [];
+                } else {
+                    $deliveryMen = DeliveryMan::where('zone_id', '=', NULL)->where('vehicle_id', $order->dm_vehicle_id)->active()->get();
                 }
             }
             $category = $request->query('category_id', 0);
@@ -334,7 +339,7 @@ class OrderController extends Controller
     public function status(Request $request)
     {
         $request->validate([
-            'reason'=>'required_if:order_status,canceled'
+            'reason' => 'required_if:order_status,canceled'
         ]);
 
         $order = Order::with(['details', 'store' => function ($query) {
@@ -533,8 +538,8 @@ class OrderController extends Controller
             $deliveryman->save();
             $deliveryman->increment('assigned_order_count');
             $fcm_token = $order->customer->cm_firebase_token;
-            $value = Helpers::order_status_update_message('accepted',$order->module->module_type,$order->customer?
-            $order->customer->current_language_key:'en');
+            $value = Helpers::order_status_update_message('accepted', $order->module->module_type, $order->customer ?
+                $order->customer->current_language_key : 'en');
             try {
                 if ($value) {
                     $data = [
@@ -619,6 +624,25 @@ class OrderController extends Controller
             return $query->withoutGlobalScope(StoreScope::class);
         }])->where('id', $id)->first();
         return view('admin-views.order.invoice', compact('order'));
+    }
+
+    public function delete($id)
+    {
+        $order = Order::withOutGlobalScope(ZoneScope::class)->with(['details', 'store' => function ($query) {
+            return $query->withCount('orders');
+        }, 'details.item' => function ($query) {
+            return $query->withoutGlobalScope(StoreScope::class);
+        }, 'details.campaign' => function ($query) {
+            return $query->withoutGlobalScope(StoreScope::class);
+        }])->where('id', $id)->first();
+        $order->delete();
+        OrderDetail::where("order_id", $id)->delete();
+        OrderDeliveryHistory::where("order_id", $id)->delete();
+        DMReview::where("order_id", $id)->delete();
+        DeliveryHistory::where("order_id", $id)->delete();
+        Review::where("order_id", $id)->delete();
+        TrackDeliveryman::where("order_id", $id)->delete();
+        return redirect()->back();
     }
 
     public function print_invoice($id)
@@ -924,11 +948,11 @@ class OrderController extends Controller
                     if ($c['item_campaign_id'] != null) {
                         $product = ItemCampaign::find($c['item_campaign_id']);
                         if ($product) {
-    
+
                             $price = $c['price'];
-    
+
                             $product = Helpers::product_data_formatting($product);
-    
+
                             $c->item_details = json_encode($product);
                             $c->updated_at = now();
                             if (isset($c->id)) {
@@ -952,7 +976,7 @@ class OrderController extends Controller
                             } else {
                                 $c->save();
                             }
-    
+
                             $total_addon_price += $c['total_add_on_price'];
                             $product_price += $price * $c['quantity'];
                             $store_discount_amount += $c['discount_on_item'] * $c['quantity'];
@@ -966,9 +990,9 @@ class OrderController extends Controller
                         $product = Item::find($c['item_id']);
                         if ($product) {
                             $price = $c['price'];
-    
+
                             $product = Helpers::product_data_formatting($product);
-    
+
                             $c->item_details = json_encode($product);
                             $c->updated_at = now();
                             if (isset($c->id)) {
@@ -992,7 +1016,7 @@ class OrderController extends Controller
                             } else {
                                 $c->save();
                             }
-    
+
                             $total_addon_price += $c['total_add_on_price'];
                             $product_price += $price * $c['quantity'];
                             $store_discount_amount += $c['discount_on_item'] * $c['quantity'];

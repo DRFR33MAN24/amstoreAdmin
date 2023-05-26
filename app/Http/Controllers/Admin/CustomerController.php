@@ -103,11 +103,12 @@ class CustomerController extends Controller
         return view('admin-views.customer.subscribed-emails', $data);
     }
 
-    public function subscribed_customer_export(Request $request){
+    public function subscribed_customer_export(Request $request)
+    {
         $customers = Newsletter::orderBy('id', 'desc')->get();
-        if($request->type == 'excel'){
+        if ($request->type == 'excel') {
             return (new FastExcel($customers))->download('Customers.xlsx');
-        }elseif($request->type == 'csv'){
+        } elseif ($request->type == 'csv') {
             return (new FastExcel($customers))->download('Customers.csv');
         }
     }
@@ -117,7 +118,7 @@ class CustomerController extends Controller
         $key = explode(' ', $request['search']);
         $customers = Newsletter::where(function ($q) use ($key) {
             foreach ($key as $value) {
-                $q->orWhere('email', 'like', "%". $value."%");
+                $q->orWhere('email', 'like', "%" . $value . "%");
             }
         })->orderBy('id', 'desc')->get();
         return response()->json([
@@ -126,19 +127,19 @@ class CustomerController extends Controller
         ]);
     }
 
-    public function get_customers(Request $request){
+    public function get_customers(Request $request)
+    {
         $key = explode(' ', $request['q']);
-        $data = User::
-        where(function ($q) use ($key) {
+        $data = User::where(function ($q) use ($key) {
             foreach ($key as $value) {
                 $q->orWhere('f_name', 'like', "%{$value}%")
-                ->orWhere('l_name', 'like', "%{$value}%")
-                ->orWhere('phone', 'like', "%{$value}%");
+                    ->orWhere('l_name', 'like', "%{$value}%")
+                    ->orWhere('phone', 'like', "%{$value}%");
             }
         })
-        ->limit(8)
-        ->get([DB::raw('id, CONCAT(f_name, " ", l_name, " (", phone ,")") as text')]);
-        if($request->all) $data[]=(object)['id'=>false, 'text'=>translate('messages.all')];
+            ->limit(8)
+            ->get([DB::raw('id, CONCAT(f_name, " ", l_name, " (", phone ,")") as text')]);
+        if ($request->all) $data[] = (object)['id' => false, 'text' => translate('messages.all')];
 
 
         return response()->json($data);
@@ -146,11 +147,11 @@ class CustomerController extends Controller
 
     public function settings()
     {
-        $data = BusinessSetting::where('key','like','wallet_%')
-            ->orWhere('key','like','loyalty_%')
-            ->orWhere('key','like','ref_earning_%')
-            ->orWhere('key','like','ref_earning_%')->get();
-        $data = array_column($data->toArray(), 'value','key');
+        $data = BusinessSetting::where('key', 'like', 'wallet_%')
+            ->orWhere('key', 'like', 'loyalty_%')
+            ->orWhere('key', 'like', 'ref_earning_%')
+            ->orWhere('key', 'like', 'ref_earning_%')->get();
+        $data = array_column($data->toArray(), 'value', 'key');
         //dd($data);
         return view('admin-views.customer.settings', compact('data'));
     }
@@ -164,21 +165,21 @@ class CustomerController extends Controller
         }
 
         $request->validate([
-            'add_fund_bonus'=>'nullable|numeric|max:100|min:0',
-            'loyalty_point_exchange_rate'=>'nullable|numeric',
-            'ref_earning_exchange_rate'=>'nullable|numeric',
+            'add_fund_bonus' => 'nullable|numeric|max:100|min:0',
+            'loyalty_point_exchange_rate' => 'nullable|numeric',
+            'ref_earning_exchange_rate' => 'nullable|numeric',
         ]);
         BusinessSetting::updateOrInsert(['key' => 'wallet_status'], [
-            'value' => $request['customer_wallet']??0
+            'value' => $request['customer_wallet'] ?? 0
         ]);
         BusinessSetting::updateOrInsert(['key' => 'loyalty_point_status'], [
-            'value' => $request['customer_loyalty_point']??0
+            'value' => $request['customer_loyalty_point'] ?? 0
         ]);
         BusinessSetting::updateOrInsert(['key' => 'ref_earning_status'], [
             'value' => $request['ref_earning_status'] ?? 0
         ]);
         BusinessSetting::updateOrInsert(['key' => 'wallet_add_refund'], [
-            'value' => $request['refund_to_wallet']??0
+            'value' => $request['refund_to_wallet'] ?? 0
         ]);
         BusinessSetting::updateOrInsert(['key' => 'loyalty_point_exchange_rate'], [
             'value' => $request['loyalty_point_exchange_rate'] ?? 0
@@ -187,22 +188,39 @@ class CustomerController extends Controller
             'value' => $request['ref_earning_exchange_rate'] ?? 0
         ]);
         BusinessSetting::updateOrInsert(['key' => 'loyalty_point_item_purchase_point'], [
-            'value' => $request['item_purchase_point']??0
+            'value' => $request['item_purchase_point'] ?? 0
         ]);
         BusinessSetting::updateOrInsert(['key' => 'loyalty_point_minimum_point'], [
-            'value' => $request['minimun_transfer_point']??0
+            'value' => $request['minimun_transfer_point'] ?? 0
         ]);
 
         Toastr::success(translate('messages.customer_settings_updated_successfully'));
         return back();
     }
 
-    public function export(Request $request){
+    public function export(Request $request)
+    {
         $item = User::orderBy('order_count', 'desc')->get();
-        if($request->type == 'excel'){
+        if ($request->type == 'excel') {
             return (new FastExcel(Helpers::export_customers($item)))->download('Customers.xlsx');
-        }elseif($request->type == 'csv'){
+        } elseif ($request->type == 'csv') {
             return (new FastExcel(Helpers::export_customers($item)))->download('Customers.csv');
         }
+    }
+
+    public function remove_user($id)
+    {
+        $user = User::find($id);
+
+        if (Order::where('user_id', $user->id)->whereIn('order_status', ['pending', 'accepted', 'confirmed', 'processing', 'handover', 'picked_up'])->count()) {
+            Toastr::error(translate('messages.user_account_delete_warning'));
+            return back();
+        }
+        // $user->token()->revoke();
+        if ($user->userinfo) {
+            $user->userinfo->delete();
+        }
+        $user->delete();
+        return back();
     }
 }

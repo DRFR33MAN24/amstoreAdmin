@@ -419,6 +419,9 @@
                                     <a class="ml-2 btn btn-sm btn--primary btn-outline-primary action-btn" href="{{route($parcel_order?'admin.order.generate-invoice':'admin.order.generate-invoice',['id'=>$order['id']])}}">
                                         <i class="tio-print"></i>
                                     </a>
+                                                                        <a class="ml-2 btn btn-sm btn--danger btn-outline-danger action-btn" href="{{route($parcel_order?'admin.order.delete':'admin.order.delete',['id'=>$order['id']])}}">
+                                        <i class="tio-delete"></i>
+                                    </a>
                                 </div>
                             </td>
                         </tr>

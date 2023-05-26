@@ -338,13 +338,13 @@ class CustomerAuthController extends Controller
             );
             // Mail::to($request['email'])->send(new EmailVerification($otp));
             $response = SMS_module::send($request['phone'], $otp);
-            if ($response != 'success') {
-                $errors = [];
-                array_push($errors, ['code' => 'otp', 'message' => translate('messages.faield_to_send_sms')]);
-                return response()->json([
-                    'errors' => $errors
-                ], 405);
-            }
+            // if ($response != 'success') {
+            //     $errors = [];
+            //     array_push($errors, ['code' => 'otp', 'message' => translate('messages.faield_to_send_sms')]);
+            //     return response()->json([
+            //         'errors' => $errors
+            //     ], 405);
+            // }
         }
         try {
             if (config('mail.status')) {

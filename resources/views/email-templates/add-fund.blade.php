@@ -117,7 +117,7 @@
           <span style="font-weight: 400;font-size: 16px;line-height: 135.5%; color:#727272; margin-bottom:7px; display:block;">{{__('messages.amount sucessfully credited to your wallet',['amount'=>$data->credit.' '.\App\CentralLogics\Helpers::currency_code()])}}</span>
           <span style="font-weight: 400;font-size: 14px;line-height: 135.5%;color: #182E4B;display:block; margin-bottom:10px;"><span style="font-weight: 700;font-size: 14px;line-height: 18.79px;color: #182E4B;color: #EF7822;">{{__('messages.note')}}: </span>{{in_array($data->transaction_type,$note_message)?$note_message[$data->transaction_type]:translate('messages.add_fund_to_wallet')}} </span>
           <span style="font-weight: 700;font-size: 14px;line-height: 135.5%;color: #182E4B; display:block; margin-bottom: 5px;">{{__('messages.dear')}} {{$data->user->f_name.' '.$data->user->l_name}}</span>
-          <span style="font-weight: 400;font-size: 12px;line-height: 135.5%;text-align: center;color: #182E4B;display:block; margin-bottom:34px;">{{__('messages.Thank you for joinning with')}} <span style="color: #EF7822;">{{$company_name}}!</span></span>
+          <span style="font-weight: 400;font-size: 12px;line-height: 135.5%;text-align: center;color: #182E4B;display:block; margin-bottom:34px;">{{__('messages.thanks')}} <span style="color: #EF7822;">{{$company_name}}!</span></span>
       </div>
   
       <div style="background-color: #F5F5F5; width: 90%;margin:auto;margin-top:30px;padding: 10px 20px 20px 5px;">
@@ -145,7 +145,7 @@
       </div>
 
       
-      <span style="font-weight: 400;font-size: 12px;line-height: 135.5%;color: #5D6774;display:block;margin-top:43px;">{{__('messages.If you require any assistance or have feedback or suggestions about our site, you can email us at')}}
+      <span style="font-weight: 400;font-size: 12px;line-height: 135.5%;color: #5D6774;display:block;margin-top:43px;">{{__('messages.If you require any assistance or have feedback or suggestions about our site  you can email us at')}}
           <a href="mailto:{{$company_email}}" class="email">{{$company_email}}</a>
       </span>
   </div>

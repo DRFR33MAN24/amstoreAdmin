@@ -150,9 +150,9 @@
                                 </span><br>
                                 <div style="margin-top: 10px;">
                                     <span
-                                        style="color: #414141 !important ; text-transform: capitalize;">{{ str_replace('_', ' ', $order->payment_method) }}</span><br>
+                                        style="color: #414141 !important ; text-transform: capitalize;">{{ translate(str_replace('_', ' ', $order->payment_method)) }}</span><br>
                                     <span style="color: {{ $order->payment_status == 'paid' ? 'green' : 'red' }};">
-                                        {{ $order->payment_status }}
+                                        {{ translate($order->payment_status) }}
                                     </span><br>
                                     <span style="color: #414141 !important ; text-transform: capitalize;">
                                         {{ date('d M Y ' . config('timeformat'), strtotime($order['created_at'])) }}
@@ -168,10 +168,10 @@
                             </span>
                             <div style="margin-top: 10px; background: aliceblue;">
                                 <span
-                                    style="color: #414141 !important ; text-transform: capitalize; width: 33.33%; display: inline-block;">{{ str_replace('_', ' ', $order->payment_method) }}
+                                    style="color: #414141 !important ; text-transform: capitalize; width: 33.33%; display: inline-block;">{{ translate(str_replace('_', ' ', $order->payment_method)) }}
                                 </span>
                                 <span style="color: {{ $order->payment_status == 'paid' ? 'green' : 'red' }}; width: 33.33%; display: inline-block;">
-                                    {{ $order->payment_status }}
+                                    {{ translate($order->payment_status) }}
                                 </span>
                                 <span style="color: #414141 !important ; text-transform: capitalize;">
                                     {{ date('d M Y ' . config('timeformat'), strtotime($order['created_at'])) }}
@@ -286,11 +286,11 @@
                         <tbody>
                         @if ($order->order_type !='parcel')
                             <tr>
-                                <th><b>{{ translate('messages.item') }} {{ translate('messages.price') }} : </b></th>
+                                <th><b>{{ translate('messages.item_price') }} : </b></th>
                                 <td>{{ \App\CentralLogics\Helpers::format_currency($sub_total) }}</td>
                             </tr>
                             <tr>
-                                <th><b>{{ translate('messages.addon') }} {{ translate('messages.cost') }} : </b></th>
+                                <th><b>{{ translate('messages.addon_cost') }} : </b></th>
                                 <td>{{ \App\CentralLogics\Helpers::format_currency($total_addon_price) }}</td>
                             </tr>
                             <tr>

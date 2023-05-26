@@ -2666,7 +2666,7 @@
                                             ' => 'This value is the miximum distance for a vehicle in this category to serve an order.
                                             ',
   'module_created_successfully' => 'Module created successfully',
-  'شحن' => 'شحن',
+  'الشحن' => 'الشحن',
   'This report will show all the orders in which the store discount has been used. The store discounts are: Free delivery, Coupon discount & item discounts(partial according to order commission).' => 'This report will show all the orders in which the store discount has been used. The store discounts are: Free delivery  Coupon discount & item discounts(partial according to order commission).',
   'Cancel Order' => 'Cancel Order',
   'Landing page header banner updated' => 'Landing page header banner updated',
@@ -2685,4 +2685,12 @@
   'app_download_button_updated' => 'App download button updated',
   'App section image updated' => 'App section image updated',
   'Footer logo updated' => 'Footer logo updated',
+  'Your registration request is now pending' => 'Your registration request is now pending',
+  'favicon.ico' => 'Favicon.ico',
+  'مطاعم' => 'مطاعم',
+  'ماركت' => 'ماركت',
+  'شحن' => 'شحن',
+  'صيدلية' => 'صيدلية',
+  'ماركت وخضار' => 'ماركت وخضار',
+  'مطاعم وحلويات' => 'مطاعم وحلويات',
 );

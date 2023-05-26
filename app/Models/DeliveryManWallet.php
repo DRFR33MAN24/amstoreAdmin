@@ -22,5 +22,5 @@ class DeliveryManWallet extends Model
         'pending_withdraw' => 'float',
     ];
 
-    protected $fillable = ['delivery_man_id'];
+    protected $fillable = ['delivery_man_id', 'collected_cash'];
 }

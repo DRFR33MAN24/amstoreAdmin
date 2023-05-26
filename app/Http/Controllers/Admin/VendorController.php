@@ -545,8 +545,8 @@ class VendorController extends Controller
             'minimum_order'=>'required',
             'comission'=>'required',
             'tax'=>'required',
-            'minimum_delivery_time' => 'required|regex:/^([0-9]{1})$/|min:1|max:2',
-            'maximum_delivery_time' => 'required|regex:/^([0-9]{1})$/|min:1|max:2|gt:minimum_delivery_time',
+            'minimum_delivery_time' => 'required',
+            'maximum_delivery_time' => 'required',
         ]);
 
         if($request->comission_status)

@@ -14,6 +14,7 @@ use Grimzy\LaravelMysqlSpatial\Types\Point;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class ConfigController extends Controller
 {
@@ -223,6 +224,7 @@ class ConfigController extends Controller
 
     public function distance_api(Request $request)
     {
+        //Log::debug('Calling distance api');
         $validator = Validator::make($request->all(), [
             'origin_lat' => 'required',
             'origin_lng' => 'required',
@@ -234,6 +236,7 @@ class ConfigController extends Controller
             return response()->json(['errors' => Helpers::error_processor($validator)], 403);
         }
         $response = Http::get('https://maps.googleapis.com/maps/api/distancematrix/json?origins='.$request['origin_lat'].','.$request['origin_lng'].'&destinations='.$request['destination_lat'].','.$request['destination_lng'].'&key='.$this->map_api_key.'&mode=walking');
+        //Log::debug($response);
         return $response->json();
     }
 
@@ -289,6 +292,7 @@ class ConfigController extends Controller
 
     public function extra_charge(Request $request)
     {
+        LOG::debug("extra_charge");
         $validator = Validator::make($request->all(), [
             'distance' => 'required',
         ]);
@@ -305,6 +309,7 @@ class ConfigController extends Controller
             ->orderBy('starting_coverage_area')->first();
 
             $extra_charges = (float) (isset($data) ? $data->extra_charges  : 0);
+            LOG::debug($extra_charges);
         return response()->json($extra_charges,200);
     }
 
