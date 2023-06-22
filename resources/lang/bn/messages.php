@@ -1085,7 +1085,7 @@
   'quantity' => 'Quantity',
   'Category Bulk Export' => 'Category Bulk Export',
   'Import Categories File' => 'Import Categories File',
-  'qty' => 'QTY',
+  'qty' => 'qty',
   'You have new order  Check Please.' => 'You have new order, Check Please.',
   'Ok  let me check' => 'Ok, let me check',
   'store deleted!' => 'Store deleted!',

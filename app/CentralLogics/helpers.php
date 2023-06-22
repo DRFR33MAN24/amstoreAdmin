@@ -732,7 +732,7 @@ class Helpers
                 "is_read": 0,
                 "icon" : "new",
                 "sound": "notification.wav",
-                "android_channel_id": "6ammart"
+                "android_channel_id": "fauoran"
                 ' . $click_action . '
             }
         }';
@@ -805,7 +805,7 @@ class Helpers
                     "is_read": 0,
                     "icon" : "new",
                     "sound": "notification.wav",
-                    "android_channel_id": "6ammart"
+                    "android_channel_id": "fauoran"
                     ' . $click_action . '
                   }
             }';
@@ -829,7 +829,7 @@ class Helpers
                     "is_read": 0,
                     "icon" : "new",
                     "sound": "notification.wav",
-                    "android_channel_id": "6ammart"
+                    "android_channel_id": "fauoran"
                     ' . $click_action . '
                   }
             }';

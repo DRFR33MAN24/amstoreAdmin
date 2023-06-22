@@ -27,6 +27,7 @@ use Grimzy\LaravelMysqlSpatial\Types\Point;
 use Stripe\Product;
 use App\Models\Refund;
 use App\Models\RefundReason;
+use Illuminate\Support\Facades\Log;
 
 class OrderController extends Controller
 {
@@ -99,6 +100,7 @@ class OrderController extends Controller
         // }
 
         $extra_charges = (float) (isset($data) ? $data->extra_charges  : 0);
+
         $vehicle_id = (isset($data) ? $data->id  : null);
         if ($request->order_type !== 'parcel') {
             if ($request->schedule_at && $schedule_at < now()) {
@@ -192,7 +194,7 @@ class OrderController extends Controller
                 $per_km_shipping_charge = $store->per_km_shipping_charge;
                 $minimum_shipping_charge = $store->minimum_shipping_charge;
                 $maximum_shipping_charge = $store->maximum_shipping_charge;
-                $extra_charges = 0;
+                // $extra_charges = 0;
                 $vehicle_id = null;
             }
 
@@ -231,6 +233,7 @@ class OrderController extends Controller
                 }
             }
             $original_delivery_charge = $original_delivery_charge + $extra_charges;
+
             $delivery_charge = $delivery_charge + $extra_charges;
         } else {
             $parcel_category = ParcelCategory::findOrFail($request->parcel_category_id);
@@ -295,6 +298,7 @@ class OrderController extends Controller
         $order->order_type = $request['order_type'];
         $order->store_id = $request['store_id'];
         $order->delivery_charge = round($delivery_charge, config('round_up_to_digit')) ?? 0;
+
         $order->original_delivery_charge = round($original_delivery_charge, config('round_up_to_digit'));
         $order->delivery_address = json_encode($address);
         $order->schedule_at = $schedule_at;
@@ -1101,7 +1105,7 @@ class OrderController extends Controller
                     ['code' => 'order', 'message' => translate('messages.not_found')]
                 ]
             ], 403);
-        } else if ($order->order_status == 'pending' || $order->order_status == 'failed'|| $order->order_status == 'canceled') {
+        } else if ($order->order_status == 'pending' || $order->order_status == 'failed' || $order->order_status == 'canceled') {
             if (config('module.' . $order->module->module_type)['stock']) {
                 foreach ($order->details as $detail) {
                     $variant = json_decode($detail['variation'], true);

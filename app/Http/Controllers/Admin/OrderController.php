@@ -27,6 +27,7 @@ use App\Http\Controllers\Controller;
 use App\Models\DeliveryHistory;
 use App\Models\DMReview;
 use App\Models\OrderDeliveryHistory;
+use App\Models\OrderTransaction;
 use App\Models\Review;
 use App\Models\TrackDeliveryman;
 use Brian2694\Toastr\Facades\Toastr;
@@ -635,13 +636,14 @@ class OrderController extends Controller
         }, 'details.campaign' => function ($query) {
             return $query->withoutGlobalScope(StoreScope::class);
         }])->where('id', $id)->first();
-        $order->delete();
         OrderDetail::where("order_id", $id)->delete();
         OrderDeliveryHistory::where("order_id", $id)->delete();
         DMReview::where("order_id", $id)->delete();
         DeliveryHistory::where("order_id", $id)->delete();
         Review::where("order_id", $id)->delete();
         TrackDeliveryman::where("order_id", $id)->delete();
+        OrderTransaction::where("order_id", $id)->delete();
+        $order->delete();
         return redirect()->back();
     }
 

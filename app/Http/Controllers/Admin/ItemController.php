@@ -21,6 +21,7 @@ use Illuminate\Support\Facades\DB;
 use App\Scopes\StoreScope;
 use App\Models\Translation;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Log;
 
 class ItemController extends Controller
 {
@@ -60,18 +61,18 @@ class ItemController extends Controller
         if ($request['price'] <= $dis || $validator->fails()) {
             return response()->json(['errors' => Helpers::error_processor($validator)]);
         }
-        
+
         $tag_ids = [];
         if ($request->tags != null) {
             $tags = explode(",", $request->tags);
         }
-        if(isset($tags)){
+        if (isset($tags)) {
             foreach ($tags as $key => $value) {
                 $tag = Tag::firstOrNew(
                     ['tag' => $value]
                 );
                 $tag->save();
-                array_push($tag_ids,$tag->id);
+                array_push($tag_ids, $tag->id);
             }
         }
 
@@ -303,18 +304,18 @@ class ItemController extends Controller
         if ($request['price'] <= $dis || $validator->fails()) {
             return response()->json(['errors' => Helpers::error_processor($validator)]);
         }
-        
+
         $tag_ids = [];
         if ($request->tags != null) {
             $tags = explode(",", $request->tags);
         }
-        if(isset($tags)){
+        if (isset($tags)) {
             foreach ($tags as $key => $value) {
                 $tag = Tag::firstOrNew(
                     ['tag' => $value]
                 );
                 $tag->save();
-                array_push($tag_ids,$tag->id);
+                array_push($tag_ids, $tag->id);
             }
         }
 
@@ -431,7 +432,7 @@ class ItemController extends Controller
             }
         }
         $slug = Str::slug($request->name[array_search('en', $request->lang)]);
-        $item->slug = $item->slug? $item->slug :"{$slug}{$item->id}";
+        $item->slug = $item->slug ? $item->slug : "{$slug}{$item->id}";
         $item->food_variations = json_encode($food_variations);
         $item->variations = $request->has('attribute_id') ? json_encode($variations) : json_encode([]);
         $item->price = $request->price;
@@ -590,12 +591,12 @@ class ItemController extends Controller
         $key = explode(' ', $request['q']);
         $cat = Category::when(isset($request->module_id), function ($query) use ($request) {
             $query->where('module_id', $request->module_id);
-            })
+        })
             ->when($request->sub_category, function ($query) {
                 $query->where('position', '>', '0');
             })
             ->where(['parent_id' => $request->parent_id])
-            ->when(isset($key),function ($q) use ($key) {
+            ->when(isset($key), function ($q) use ($key) {
                 foreach ($key as $value) {
                     $q->where('name', 'like', "%{$value}%");
                 }
@@ -697,11 +698,11 @@ class ItemController extends Controller
 
     public function review_list(Request $request)
     {
-        $reviews = Review::with(['item'=>function($query){
+        $reviews = Review::with(['item' => function ($query) {
             $query->withOutGlobalScope(StoreScope::class);
         }, 'customer'])->whereHas('item', function ($q) use ($request) {
             return $q->where('module_id', Config::get('module.current_module_id'))->withOutGlobalScope(StoreScope::class);
-        })->latest()->paginate(config('default_pagination'));   
+        })->latest()->paginate(config('default_pagination'));
         return view('admin-views.product.reviews-list', compact('reviews'));
     }
 
@@ -769,10 +770,10 @@ class ItemController extends Controller
                 'store_id' => $collection['store_id'],
                 'module_id' => $collection['module_id'],
                 'stock' => is_numeric($collection['stock']) ? abs($collection['stock']) : 0,
-                'add_ons' => $collection['add_ons'] ?? json_encode([]),
-                'attributes' => $collection['attributes'] ??  json_encode([]),
-                'choice_options' => $collection['choice_options'] ?? json_encode([]),
-                'variations' => $collection['variations'] ?? json_encode([]),
+                'add_ons' => $collection['add_ons'] ? $collection['add_ons'] : json_encode([]),
+                'attributes' => $collection['attributes'] ? $collection['attributes'] :  json_encode([]),
+                'choice_options' => $collection['choice_options'] ? $collection['choice_options'] : json_encode([]),
+                'variations' => $collection['variations'] ? $collection['variations'] : json_encode([]),
                 'created_at' => now(),
                 'updated_at' => now()
             ]);
